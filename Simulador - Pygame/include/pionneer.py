@@ -1,2 +1,0 @@
-class Pioneer:
-    pass
