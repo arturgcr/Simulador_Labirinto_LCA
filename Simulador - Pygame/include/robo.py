@@ -2,11 +2,75 @@ import pygame
 import math
 
 class Robo:
-    def __init__(self, inicio):
+    def __init__(self, inicio, labirinto):
         self.posicao = list(inicio)
+        self.labirinto = labirinto
         self.direcao = 0  # 0: cima, 1: direita, 2: baixo, 3: esquerda
-        self.cor = (50, 255, 100)  # Verde
-        self.cor_seta = (0, 0, 0)  # Preto
+        self.cor = (220, 120, 245)
+        self.cor_seta = (0, 0, 0)
+        self.cor_sensor = (0, 255, 0)
+        self.deteccoes = {
+            'frente': False,
+            'esquerda': False,
+            'direita': False
+        }
+
+    def detectar_paredes(self):
+        """Detecta paredes ao redor do robô de forma precisa"""
+        x, y = self.posicao
+        self.deteccoes = {'frente': False, 'esquerda': False, 'direita': False}
+
+        # Verifica paredes internas e externas
+        todas_paredes = self.labirinto.paredes.union(self.labirinto.paredes_externas)
+
+        if self.direcao == 0:  # Cima
+            self.deteccoes['frente'] = self._verificar_parede(x, y-1, todas_paredes)
+            self.deteccoes['esquerda'] = self._verificar_parede(x-1, y, todas_paredes)
+            self.deteccoes['direita'] = self._verificar_parede(x+1, y, todas_paredes)
+
+        elif self.direcao == 1:  # Direita
+            self.deteccoes['frente'] = self._verificar_parede(x+1, y, todas_paredes)
+            self.deteccoes['esquerda'] = self._verificar_parede(x, y-1, todas_paredes)
+            self.deteccoes['direita'] = self._verificar_parede(x, y+1, todas_paredes)
+
+        elif self.direcao == 2:  # Baixo
+            self.deteccoes['frente'] = self._verificar_parede(x, y+1, todas_paredes)
+            self.deteccoes['esquerda'] = self._verificar_parede(x+1, y, todas_paredes)
+            self.deteccoes['direita'] = self._verificar_parede(x-1, y, todas_paredes)
+
+        else:  # Esquerda
+            self.deteccoes['frente'] = self._verificar_parede(x-1, y, todas_paredes)
+            self.deteccoes['esquerda'] = self._verificar_parede(x, y+1, todas_paredes)
+            self.deteccoes['direita'] = self._verificar_parede(x, y-1, todas_paredes)
+
+    def _verificar_parede(self, x, y, paredes):
+        """Verifica se há parede na posição (x,y) de forma precisa"""
+        # Verifica se está fora dos limites (paredes externas)
+        if x < 0 or y < 0 or x >= self.labirinto.linhas or y >= self.labirinto.colunas:
+            return True
+
+        # Verifica paredes específicas baseadas na direção
+        if self.direcao == 0:  # Cima
+            return (x, y, 'D') in paredes  # Parede abaixo da célula acima
+        elif self.direcao == 1:  # Direita
+            return (x, y, 'R') in paredes  # Parede à direita da célula
+        elif self.direcao == 2:  # Baixo
+            return (x, y, 'D') in paredes  # Parede abaixo da célula
+        else:  # Esquerda
+            return (x, y, 'R') in paredes  # Parede à direita da célula à esquerda
+
+    def _detectar_parede(self, x, y, paredes):
+        """Verifica se há parede na posição (x,y)"""
+        # Verifica se está fora dos limites (paredes externas)
+        if x < 0 or y < 0 or x >= self.labirinto.linhas or y >= self.labirinto.colunas:
+            return True
+        
+        # Verifica paredes internas
+        if (x, y, 'R') in paredes or (x-1, y, 'R') in paredes:
+            return True
+        if (x, y, 'D') in paredes or (x, y-1, 'D') in paredes:
+            return True
+        return False
 
     def girar_esquerda(self):
         self.direcao = (self.direcao - 1) % 4
@@ -14,11 +78,13 @@ class Robo:
     def girar_direita(self):
         self.direcao = (self.direcao + 1) % 4
 
-    def mover(self, acao, paredes):
+    def mover(self, acao):
+        """Move o robô verificando colisões com todas as paredes"""
+        todas_paredes = self.labirinto.paredes.union(self.labirinto.paredes_externas)
         if acao == 'FRENTE':
-            self._mover_na_direcao(1, paredes)
+            self._mover_na_direcao(1, todas_paredes)
         elif acao == 'TRAS':
-            self._mover_na_direcao(-1, paredes)
+            self._mover_na_direcao(-1, todas_paredes)
 
     def _mover_na_direcao(self, passo, paredes):
         nova_pos = self.posicao.copy()
@@ -50,14 +116,15 @@ class Robo:
     def desenhar(self, superficie, tamanho_celula):
         centro_x = self.posicao[0] * tamanho_celula + tamanho_celula // 2
         centro_y = self.posicao[1] * tamanho_celula + tamanho_celula // 2
-        raio = tamanho_celula // 3
+        self.raio = tamanho_celula // 3  # Definindo o raio aqui
 
-        # Desenha o corpo do robô
-        pygame.draw.circle(superficie, self.cor, (centro_x, centro_y), raio)
+        pygame.draw.circle(superficie, self.cor, (centro_x, centro_y), self.raio)
+        self.desenhar_sensores(superficie, centro_x, centro_y, tamanho_celula)
+        self.desenhar_seta(superficie, centro_x, centro_y)
 
-        # Desenha a seta (triângulo apontando na direção atual)
+    def desenhar_seta(self, superficie, centro_x, centro_y):
+        tamanho_seta = self.raio * 0.8
         pontos = []
-        tamanho_seta = raio * 0.8
         
         if self.direcao == 0:  # Cima
             pontos = [
@@ -85,3 +152,74 @@ class Robo:
             ]
         
         pygame.draw.polygon(superficie, self.cor_seta, pontos)
+
+    def desenhar_sensores(self, superficie, centro_x, centro_y, tamanho_celula):
+        comprimento = tamanho_celula
+        espessura = 2
+        
+        if self.direcao == 0:  # Cima
+            # Frente
+            pygame.draw.line(superficie, self.cor_sensor, 
+                           (centro_x, centro_y - self.raio),
+                           (centro_x, centro_y - comprimento), espessura)
+            # Esquerda (-60°)
+            end_x = centro_x - comprimento * math.sin(math.radians(60))
+            end_y = centro_y - comprimento * math.cos(math.radians(60))
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x, centro_y), (end_x, end_y), espessura)
+            # Direita (+60°)
+            end_x = centro_x + comprimento * math.sin(math.radians(60))
+            end_y = centro_y - comprimento * math.cos(math.radians(60))
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x, centro_y), (end_x, end_y), espessura)
+
+        elif self.direcao == 1:  # Direita
+            # Frente
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x + self.raio, centro_y),
+                           (centro_x + comprimento, centro_y), espessura)
+            # Esquerda (-60°)
+            end_x = centro_x + comprimento * math.cos(math.radians(60))
+            end_y = centro_y - comprimento * math.sin(math.radians(60))
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x, centro_y), (end_x, end_y), espessura)
+            # Direita (+60°)
+            end_x = centro_x + comprimento * math.cos(math.radians(60))
+            end_y = centro_y + comprimento * math.sin(math.radians(60))
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x, centro_y), (end_x, end_y), espessura)
+
+        elif self.direcao == 2:  # Baixo
+            # Frente
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x, centro_y + self.raio),
+                           (centro_x, centro_y + comprimento), espessura)
+            # Esquerda (-60°)
+            end_x = centro_x + comprimento * math.sin(math.radians(60))
+            end_y = centro_y + comprimento * math.cos(math.radians(60))
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x, centro_y), (end_x, end_y), espessura)
+            # Direita (+60°)
+            end_x = centro_x - comprimento * math.sin(math.radians(60))
+            end_y = centro_y + comprimento * math.cos(math.radians(60))
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x, centro_y), (end_x, end_y), espessura)
+
+        else:  # Esquerda
+            # Frente
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x - self.raio, centro_y),
+                           (centro_x - comprimento, centro_y), espessura)
+            # Esquerda (-60°)
+            end_x = centro_x - comprimento * math.cos(math.radians(60))
+            end_y = centro_y + comprimento * math.sin(math.radians(60))
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x, centro_y), (end_x, end_y), espessura)
+            # Direita (+60°)
+            end_x = centro_x - comprimento * math.cos(math.radians(60))
+            end_y = centro_y - comprimento * math.sin(math.radians(60))
+            pygame.draw.line(superficie, self.cor_sensor,
+                           (centro_x, centro_y), (end_x, end_y), espessura)
+
+    def get_deteccoes(self):
+        return self.deteccoes

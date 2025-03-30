@@ -16,24 +16,39 @@ import json
 
 class Labirinto:
     def __init__(self, linhas, colunas, algoritmo='prim'):
-        """
-        Inicializa um novo labirinto
-        
-        Args:
-            linhas (int): Número de linhas do labirinto
-            colunas (int): Número de colunas do labirinto
-            algoritmo (str): 'prim' ou 'kruskal' (algoritmo de geração)
-        """
         self.linhas = linhas
         self.colunas = colunas
         self.algoritmo = algoritmo
-        self.paredes = set()  # Conjunto de paredes (x, y, direção)
-        self.labirinto = nx.Graph()  # Grafo representando os caminhos
-        self.inicio = (0, 0)  # Ponto de início
-        self.fim = (colunas - 1, linhas - 1)  # Ponto de destino
-        
-        # Gera o labirinto automaticamente na criação
+        self.paredes = set()
+        self.paredes_externas = set()
+        self.labirinto = nx.Graph()
+        self.inicio = (0, 0)
+        self.fim = (colunas - 1, linhas - 1)
         self.gerar_labirinto()
+        self._definir_paredes_externas()
+
+    def _definir_paredes_externas(self):
+        """Define paredes externas ao redor de todo o labirinto"""
+        # Paredes horizontais externas (acima e abaixo do labirinto)
+        for x in range(-1, self.linhas + 1):
+            self.paredes_externas.add((x, -1, 'D'))  # Acima
+            self.paredes_externas.add((x, self.colunas, 'D'))  # Abaixo
+
+        # Paredes verticais externas (esquerda e direita do labirinto)
+        for y in range(-1, self.colunas + 1):
+            self.paredes_externas.add((-1, y, 'R'))  # Esquerda
+            self.paredes_externas.add((self.linhas, y, 'R'))  # Direita
+    def _adicionar_paredes_externas(self):
+        """Adiciona paredes externas ao redor de todo o labirinto"""
+        # Paredes horizontais (acima da primeira linha e abaixo da última)
+        for x in range(-1, self.linhas + 1):
+            self.paredes_externas.add((x, -1, 'D'))  # Parede acima do labirinto
+            self.paredes_externas.add((x, self.colunas, 'D'))  # Parede abaixo do labirinto
+        
+        # Paredes verticais (à esquerda da primeira coluna e à direita da última)
+        for y in range(-1, self.colunas + 1):
+            self.paredes_externas.add((-1, y, 'R'))  # Parede à esquerda do labirinto
+            self.paredes_externas.add((self.linhas, y, 'R'))  # Parede à direita do labirinto
 
     # =============================================
     # MÉTODOS PÚBLICOS
