@@ -12,7 +12,7 @@ LARGURA, ALTURA = 700, 700
 LARGURA_INFO = 210
 
 # Tamanho do labirinto (em células)
-LINHAS, COLUNAS = 35, 35
+LINHAS, COLUNAS = 20, 20
 
 # Tamanho de cada célula (ajustado para caber na janela)
 TAMANHO_CELULA = min(LARGURA // COLUNAS, ALTURA // LINHAS)
@@ -243,14 +243,17 @@ class SimuladorLabirinto:
         return True  # Continua o jogo
 
     def processar_teclado(self, evento):
+        """Processa comandos do teclado e imprime o estado do robô"""
         if evento.key == pygame.K_LEFT:
             self.robo.girar_esquerda()
+            print(self.robo.get_estado())
         elif evento.key == pygame.K_RIGHT:
             self.robo.girar_direita()
+            print(self.robo.get_estado())
         elif evento.key == pygame.K_UP:
-            self.robo.mover('FRENTE')
+            self.robo.mover('F')  # Ou pode usar pygame.K_UP para manter compatibilidade
         elif evento.key == pygame.K_DOWN:
-            self.robo.mover('TRAS')
+            self.robo.mover('B')  # Ou pode usar pygame.K_DOWN para manter compatibilidade
         elif evento.key == pygame.K_SPACE:
             self.mostrar_caminho = not self.mostrar_caminho
 
@@ -282,6 +285,20 @@ class SimuladorLabirinto:
         """Alterna entre os algoritmos de geração de labirinto"""
         self.algoritmo = 'kruskal' if self.algoritmo == 'prim' else 'prim'
         self.criar_novo_labirinto()
+
+    def salvar_labirinto(self):
+        """Salva o labirinto atual em um arquivo JSON"""
+        try:
+            # Encontra o próximo número disponível para nome do arquivo
+            arquivos = [f for f in os.listdir('Simulador - Pygame/data') if f.startswith('labirinto_')]
+            numero = len(arquivos) + 1
+            nome_arquivo = f"Simulador - Pygame/data/labirinto_{numero}.json"
+            
+            # Salva o labirinto
+            self.labirinto.salvar_para_arquivo(nome_arquivo)
+            print(f"Labirinto salvo como {nome_arquivo}")
+        except Exception as e:
+            print(f"Erro ao salvar labirinto: {e}")
 
     def carregar_labirinto(self):
         """Carrega o último labirinto salvo"""

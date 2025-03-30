@@ -49,6 +49,16 @@ class Labirinto:
         for y in range(-1, self.colunas + 1):
             self.paredes_externas.add((-1, y, 'R'))  # Parede à esquerda do labirinto
             self.paredes_externas.add((self.linhas, y, 'R'))  # Parede à direita do labirinto
+    def _reconstruir_grafo(self):
+        """Reconstrói o grafo do labirinto com base nas paredes atuais"""
+        self.labirinto = nx.grid_2d_graph(self.linhas, self.colunas)
+        
+        # Remove arestas onde existem paredes
+        for x, y, direcao in self.paredes:
+            if direcao == 'R' and x < self.linhas - 1:
+                self.labirinto.remove_edge((x, y), (x + 1, y))
+            elif direcao == 'D' and y < self.colunas - 1:
+                self.labirinto.remove_edge((x, y), (x, y + 1))
 
     # =============================================
     # MÉTODOS PÚBLICOS
@@ -113,6 +123,7 @@ class Labirinto:
         labirinto.paredes = set(tuple(parede) for parede in dados['paredes'])
         labirinto.inicio = tuple(dados['inicio'])
         labirinto.fim = tuple(dados['fim'])
+        labirinto._reconstruir_grafo()  # RECONSTRÓI O GRAFO
         return labirinto
 
     # =============================================
@@ -164,43 +175,53 @@ class Labirinto:
 
     def _gerar_labirinto_kruskal(self):
         """
-        Implementação do algoritmo de Kruskal para geração de labirintos
-        
-        Cria labirintos com menos dead-ends que Prim
+        Implementação corrigida do algoritmo de Kruskal para geração de labirintos
         """
-        # Cria grafo grid completo
-        G = nx.grid_2d_graph(self.linhas, self.colunas)
-        arestas = list(G.edges())
-        random.shuffle(arestas)  # Embaralha arestas
+        # Cria grafo grid completo com todas as paredes possíveis
+        self.paredes = {
+            (x, y, d) 
+            for x in range(self.linhas) 
+            for y in range(self.colunas) 
+            for d in ['R', 'D']  # R: Parede à direita, D: Parede abaixo
+        }
+        
+        # Adiciona paredes nas bordas
+        self._adicionar_paredes_borda()
+        
+        # Cria lista de todas as arestas possíveis (paredes internas)
+        arestas = []
+        for x in range(self.linhas):
+            for y in range(self.colunas):
+                if x < self.linhas - 1:
+                    arestas.append(((x, y), (x+1, y)))  # Parede à direita
+                if y < self.colunas - 1:
+                    arestas.append(((x, y), (x, y+1)))  # Parede abaixo
+        
+        # Embaralha as arestas
+        random.shuffle(arestas)
         
         # Estruturas para Union-Find
-        pai = {no: no for no in G.nodes()}
-        rank = {no: 0 for no in G.nodes()}
+        pai = {no: no for no in [(x, y) for x in range(self.linhas) for y in range(self.colunas)]}
+        rank = {no: 0 for no in pai.keys()}
 
-        # Funções auxiliares para Union-Find
         def encontrar(v):
-            """Find com path compression"""
             if pai[v] != v:
                 pai[v] = encontrar(pai[v])
             return pai[v]
 
         def unir(v1, v2):
-            """Union by rank"""
             raiz1 = encontrar(v1)
             raiz2 = encontrar(v2)
-            
             if raiz1 != raiz2:
                 if rank[raiz1] > rank[raiz2]:
                     pai[raiz2] = raiz1
-                elif rank[raiz1] < rank[raiz2]:
-                    pai[raiz1] = raiz2
                 else:
-                    pai[raiz2] = raiz1
-                    rank[raiz1] += 1
+                    pai[raiz1] = raiz2
+                    if rank[raiz1] == rank[raiz2]:
+                        rank[raiz2] += 1
 
         # Processa cada aresta
-        for aresta in arestas:
-            u, v = aresta
+        for u, v in arestas:
             if encontrar(u) != encontrar(v):
                 # Conecta os nós no labirinto
                 self.labirinto.add_edge(u, v)
@@ -229,16 +250,20 @@ class Labirinto:
 
     def _remover_parede_entre(self, no1, no2):
         """
-        Remove a parede entre duas células adjacentes
-        
-        Args:
-            no1 (tuple): Coordenadas (x,y) da primeira célula
-            no2 (tuple): Coordenadas (x,y) da segunda célula
+        Remove a parede entre duas células adjacentes de forma consistente
         """
         x1, y1 = no1
         x2, y2 = no2
         
-        if x1 == x2:  # Células na mesma coluna (movimento vertical)
-            self.paredes.discard((x1, min(y1, y2), 'D'))  # Remove parede abaixo
-        else:  # Células na mesma linha (movimento horizontal)
-            self.paredes.discard((min(x1, x2), y1, 'R'))  # Remove parede à direita
+        if x1 == x2:  # Células na mesma coluna (vertical)
+            # Remove parede abaixo da célula de cima
+            if y1 < y2:
+                self.paredes.discard((x1, y1, 'D'))
+            else:
+                self.paredes.discard((x2, y2, 'D'))
+        else:  # Células na mesma linha (horizontal)
+            # Remove parede à direita da célula da esquerda
+            if x1 < x2:
+                self.paredes.discard((x1, y1, 'R'))
+            else:
+                self.paredes.discard((x2, y2, 'R'))

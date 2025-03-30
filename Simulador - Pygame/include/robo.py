@@ -14,62 +14,66 @@ class Robo:
             'esquerda': False,
             'direita': False
         }
+        print(self.get_estado())  # Imprime o estado inicial do robô
 
     def detectar_paredes(self):
-        """Detecta paredes ao redor do robô de forma precisa"""
+        """Detecta paredes ao redor do robô de forma consistente em todas as direções"""
         x, y = self.posicao
         self.deteccoes = {'frente': False, 'esquerda': False, 'direita': False}
 
-        # Verifica paredes internas e externas
-        todas_paredes = self.labirinto.paredes.union(self.labirinto.paredes_externas)
+        # Verifica primeiro se está contra as paredes externas
+        if x == 0:
+            self.deteccoes['esquerda'] = True if self.direcao == 3 else False
+        if x == self.labirinto.linhas - 1:
+            self.deteccoes['direita'] = True if self.direcao == 1 else False
+        if y == 0:
+            self.deteccoes['cima'] = True if self.direcao == 0 else False
+        if y == self.labirinto.colunas - 1:
+            self.deteccoes['baixo'] = True if self.direcao == 2 else False
 
+        # Verifica paredes internas baseado na direção atual
         if self.direcao == 0:  # Cima
-            self.deteccoes['frente'] = self._verificar_parede(x, y-1, todas_paredes)
-            self.deteccoes['esquerda'] = self._verificar_parede(x-1, y, todas_paredes)
-            self.deteccoes['direita'] = self._verificar_parede(x+1, y, todas_paredes)
-
+            self.deteccoes['frente'] = self._parede_em(x, y, 'cima')
+            self.deteccoes['esquerda'] = self._parede_em(x, y, 'esquerda')
+            self.deteccoes['direita'] = self._parede_em(x, y, 'direita')
+        
         elif self.direcao == 1:  # Direita
-            self.deteccoes['frente'] = self._verificar_parede(x+1, y, todas_paredes)
-            self.deteccoes['esquerda'] = self._verificar_parede(x, y-1, todas_paredes)
-            self.deteccoes['direita'] = self._verificar_parede(x, y+1, todas_paredes)
-
+            self.deteccoes['frente'] = self._parede_em(x, y, 'direita')
+            self.deteccoes['esquerda'] = self._parede_em(x, y, 'cima')
+            self.deteccoes['direita'] = self._parede_em(x, y, 'baixo')
+        
         elif self.direcao == 2:  # Baixo
-            self.deteccoes['frente'] = self._verificar_parede(x, y+1, todas_paredes)
-            self.deteccoes['esquerda'] = self._verificar_parede(x+1, y, todas_paredes)
-            self.deteccoes['direita'] = self._verificar_parede(x-1, y, todas_paredes)
+            self.deteccoes['frente'] = self._parede_em(x, y, 'baixo')
+            self.deteccoes['esquerda'] = self._parede_em(x, y, 'direita')
+            self.deteccoes['direita'] = self._parede_em(x, y, 'esquerda')
+        
+        else:  # Esquerda (3)
+            self.deteccoes['frente'] = self._parede_em(x, y, 'esquerda')
+            self.deteccoes['esquerda'] = self._parede_em(x, y, 'baixo')
+            self.deteccoes['direita'] = self._parede_em(x, y, 'cima')
 
-        else:  # Esquerda
-            self.deteccoes['frente'] = self._verificar_parede(x-1, y, todas_paredes)
-            self.deteccoes['esquerda'] = self._verificar_parede(x, y+1, todas_paredes)
-            self.deteccoes['direita'] = self._verificar_parede(x, y-1, todas_paredes)
-
-    def _verificar_parede(self, x, y, paredes):
-        """Verifica se há parede na posição (x,y) de forma precisa"""
-        # Verifica se está fora dos limites (paredes externas)
-        if x < 0 or y < 0 or x >= self.labirinto.linhas or y >= self.labirinto.colunas:
+    def _parede_em(self, x, y, lado):
+        """Verifica se há parede em um lado específico da célula"""
+        # Primeiro verifica se está tentando sair dos limites
+        if lado == 'cima' and y == 0:
             return True
-
-        # Verifica paredes específicas baseadas na direção
-        if self.direcao == 0:  # Cima
-            return (x, y, 'D') in paredes  # Parede abaixo da célula acima
-        elif self.direcao == 1:  # Direita
-            return (x, y, 'R') in paredes  # Parede à direita da célula
-        elif self.direcao == 2:  # Baixo
-            return (x, y, 'D') in paredes  # Parede abaixo da célula
-        else:  # Esquerda
-            return (x, y, 'R') in paredes  # Parede à direita da célula à esquerda
-
-    def _detectar_parede(self, x, y, paredes):
-        """Verifica se há parede na posição (x,y)"""
-        # Verifica se está fora dos limites (paredes externas)
-        if x < 0 or y < 0 or x >= self.labirinto.linhas or y >= self.labirinto.colunas:
+        if lado == 'baixo' and y == self.labirinto.colunas - 1:
+            return True
+        if lado == 'esquerda' and x == 0:
+            return True
+        if lado == 'direita' and x == self.labirinto.linhas - 1:
             return True
         
         # Verifica paredes internas
-        if (x, y, 'R') in paredes or (x-1, y, 'R') in paredes:
-            return True
-        if (x, y, 'D') in paredes or (x, y-1, 'D') in paredes:
-            return True
+        if lado == 'cima':
+            return (x, y-1, 'D') in self.labirinto.paredes if y > 0 else True
+        elif lado == 'baixo':
+            return (x, y, 'D') in self.labirinto.paredes
+        elif lado == 'esquerda':
+            return (x-1, y, 'R') in self.labirinto.paredes if x > 0 else True
+        elif lado == 'direita':
+            return (x, y, 'R') in self.labirinto.paredes
+        
         return False
 
     def girar_esquerda(self):
@@ -78,13 +82,28 @@ class Robo:
     def girar_direita(self):
         self.direcao = (self.direcao + 1) % 4
 
-    def mover(self, acao):
-        """Move o robô verificando colisões com todas as paredes"""
-        todas_paredes = self.labirinto.paredes.union(self.labirinto.paredes_externas)
-        if acao == 'FRENTE':
-            self._mover_na_direcao(1, todas_paredes)
-        elif acao == 'TRAS':
-            self._mover_na_direcao(-1, todas_paredes)
+    def mover(self, comando):
+        """
+        Move ou rotaciona o robô baseado em comandos:
+        - 'F' ou 'FRENTE': Move para frente
+        - 'B' ou 'TRAS': Move para trás
+        - 'R': Apenas vira 90° à direita (sem mover)
+        - 'L': Apenas vira 90° à esquerda (sem mover)
+        - Teclas de seta mantêm comportamento original
+        """
+        comando = comando.upper() if isinstance(comando, str) else comando
+        
+        if comando in ['F', 'FRENTE', pygame.K_UP]:
+            self._mover_na_direcao(1, self.labirinto.paredes.union(self.labirinto.paredes_externas))
+        elif comando in ['B', 'TRAS', pygame.K_DOWN]:
+            self._mover_na_direcao(-1, self.labirinto.paredes.union(self.labirinto.paredes_externas))
+        elif comando == 'R':
+            self.girar_direita()  # Apenas rotaciona
+        elif comando == 'L':
+            self.girar_esquerda()  # Apenas rotaciona
+        
+        # Imprime o estado após qualquer ação
+        print(self.get_estado())
 
     def _mover_na_direcao(self, passo, paredes):
         nova_pos = self.posicao.copy()
@@ -223,3 +242,17 @@ class Robo:
 
     def get_deteccoes(self):
         return self.deteccoes
+    
+    def get_estado(self):
+        """Retorna um dicionário com a posição e estado dos sensores"""
+        self.detectar_paredes()  # Atualiza as detecções
+        
+        return {
+            'posicao': tuple(self.posicao),
+            'sensores': {
+                'frente': 1 if self.deteccoes['frente'] else 0,
+                'esquerda': 1 if self.deteccoes['esquerda'] else 0,
+                'direita': 1 if self.deteccoes['direita'] else 0
+            },
+            'direcao': self.direcao
+        }
