@@ -8,11 +8,11 @@ import os
 # =============================================
 
 # Dimensões da janela principal e do painel lateral
-LARGURA, ALTURA = 700, 700
+LARGURA, ALTURA = 800, 800
 LARGURA_INFO = 210
 
 # Tamanho do labirinto (em células)
-LINHAS, COLUNAS = 20, 20
+LINHAS, COLUNAS = 100, 100
 
 # Tamanho de cada célula (ajustado para caber na janela)
 TAMANHO_CELULA = min(LARGURA // COLUNAS, ALTURA // LINHAS)
@@ -21,7 +21,7 @@ TAMANHO_CELULA = min(LARGURA // COLUNAS, ALTURA // LINHAS)
 BRANCO = (255, 255, 255)     # Fundo
 PRETO = (0, 0, 0)            # Paredes
 AZUL = (50, 100, 255)        # Ponto de início
-VERMELHO = (255, 50, 50)     # Ponto final
+VERMELHO = (255, 0, 0)     # Ponto final
 VERDE = (50, 255, 100)       # Robô
 CINZA = (200, 200, 200)      # Painel lateral
 ROXO = (150, 50, 255)        # Caminho da solução
@@ -126,10 +126,10 @@ class SimuladorLabirinto:
     def desenhar_caminho_solucao(self):
         """Renderiza o caminho da solução (se existir)"""
         for x, y in self.caminho_solucao:
-            pygame.draw.circle(self.tela, ROXO,
+            pygame.draw.circle(self.tela, VERMELHO,
                              (int(x * TAMANHO_CELULA + TAMANHO_CELULA / 2), 
                              int(y * TAMANHO_CELULA + TAMANHO_CELULA / 2)), 
-                             TAMANHO_CELULA // 6)
+                             TAMANHO_CELULA // 4)
 
     def desenhar_painel_lateral(self):
         """Renderiza o painel lateral com informações organizadas"""
