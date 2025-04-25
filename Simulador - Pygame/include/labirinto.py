@@ -26,6 +26,7 @@ class Labirinto:
         self.fim = (colunas - 1, linhas - 1)
         self.gerar_labirinto()
         self._definir_paredes_externas()
+        self.simulador = None  # Será atribuído externamente pelo SimuladorLabirinto
 
     def _definir_paredes_externas(self):
         """Define paredes externas ao redor de todo o labirinto"""
@@ -67,13 +68,13 @@ class Labirinto:
     def gerar_labirinto(self):
         """
         Gera o labirinto usando o algoritmo especificado
-        
-        Chama o método apropriado baseado no algoritmo selecionado
         """
         if self.algoritmo == 'prim':
             self._gerar_labirinto_prim()
         elif self.algoritmo == 'kruskal':
             self._gerar_labirinto_kruskal()
+        elif self.algoritmo == 'growingtree':
+            self._gerar_labirinto_growing_tree_com_cycles()
 
     def resolver(self):
         """
@@ -232,6 +233,51 @@ class Labirinto:
                 # Une os conjuntos
                 unir(u, v)
 
+    def _gerar_labirinto_growing_tree_com_cycles(self):
+        """
+        Implementação do algoritmo Growing Tree com permissão de ciclos
+        """
+        self.labirinto = nx.Graph()
+
+        self.paredes = {
+            (x, y, d)
+            for x in range(self.linhas)
+            for y in range(self.colunas)
+            for d in ['R', 'D']
+        }
+        self._adicionar_paredes_borda()
+
+        visitado = [[False for _ in range(self.colunas)] for _ in range(self.linhas)]
+
+        def vizinhos_validos(cx, cy):
+            direcoes = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            random.shuffle(direcoes)
+            for dx, dy in direcoes:
+                nx_, ny_ = cx + dx, cy + dy
+                if 0 <= nx_ < self.linhas and 0 <= ny_ < self.colunas:
+                    yield nx_, ny_
+
+        x0, y0 = random.randrange(0, self.linhas), random.randrange(0, self.colunas)
+        visitado[x0][y0] = True
+        lista = [(x0, y0)]
+
+        while lista:
+            x, y = lista[-1]
+            vizinhos = list(vizinhos_validos(x, y))
+            random.shuffle(vizinhos)
+            encontrou = False
+            for nx_, ny_ in vizinhos:
+                if not visitado[nx_][ny_] or random.random() < 0.15:  # 15% chance de criar ciclo
+                    self.labirinto.add_edge((x, y), (nx_, ny_))
+                    self._remover_parede_entre((x, y), (nx_, ny_))
+                    if not visitado[nx_][ny_]:
+                        visitado[nx_][ny_] = True
+                        lista.append((nx_, ny_))
+                    encontrou = True
+                    break
+            if not encontrou:
+                lista.pop()
+
     # =============================================
     # MÉTODOS AUXILIARES
     # =============================================
@@ -267,3 +313,12 @@ class Labirinto:
                 self.paredes.discard((x1, y1, 'R'))
             else:
                 self.paredes.discard((x2, y2, 'R'))
+
+    def get_grafo(self):
+        return self.labirinto
+
+    def get_inicio(self):
+        return self.inicio
+
+    def get_fim(self):
+        return self.fim

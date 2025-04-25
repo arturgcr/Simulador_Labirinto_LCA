@@ -8,24 +8,25 @@ import os
 # =============================================
 
 # Dimensões da janela principal e do painel lateral
-LARGURA, ALTURA = 800, 800
+LARGURA, ALTURA = 700, 700
 LARGURA_INFO = 210
 
 # Tamanho do labirinto (em células)
-LINHAS, COLUNAS = 100, 100
+LINHAS, COLUNAS = 5, 5
 
 # Tamanho de cada célula (ajustado para caber na janela)
 TAMANHO_CELULA = min(LARGURA // COLUNAS, ALTURA // LINHAS)
 
 # Paleta de cores
-BRANCO = (255, 255, 255)     # Fundo
-PRETO = (0, 0, 0)            # Paredes
-AZUL = (50, 100, 255)        # Ponto de início
-VERMELHO = (255, 0, 0)     # Ponto final
-VERDE = (50, 255, 100)       # Robô
-CINZA = (200, 200, 200)      # Painel lateral
-ROXO = (150, 50, 255)        # Caminho da solução
-AZUL_CLARO = (100, 150, 255) # Botão ativo
+BRANCO = (255, 255, 255)                    # Fundo
+PRETO = (0, 0, 0)                           # Paredes
+AZUL = (50, 100, 255)                       # Ponto de início
+VERMELHO = (255, 0, 0)                      # Ponto final
+VERDE = (50, 255, 100)                      # Robô
+CINZA = (200, 200, 200)                     # Painel lateral
+ROXO = (150, 50, 255)                       # Caminho da solução
+AZUL_CLARO = (100, 150, 255)                # Botão ativo
+VERMELHO_TRANSPARENTE = (255, 0, 0, 150)    # Caminho transparente
 
 # =============================================
 # CLASE PRINCIPAL DO SIMULADOR
@@ -55,10 +56,14 @@ class SimuladorLabirinto:
         # self.robo = Robo(self.labirinto.inicio, self.labirinto)  # Passe o labirinto como parâmetro
         self.caminho_solucao = self.labirinto.resolver()      # Solução do labirinto
         
-        # Estados do jogo
+        # Estados do simulador
         self.mostrar_caminho = False   # Se deve mostrar o caminho da solução
         self.algoritmo = 'prim'        # Algoritmo atual de geração
         self.ultimo_evento = None      # Último evento processado
+        self.algoritmo_solucao = 'dfs'  # Algoritmo de busca inicial
+        self.botoes_laterais = {}
+        self.labirinto.simulador = self
+
 
     def criar_pasta_dados(self):
         """Cria a pasta 'data' se não existir para armazenar labirintos salvos"""
@@ -122,15 +127,17 @@ class SimuladorLabirinto:
                         (self.labirinto.fim[0] * TAMANHO_CELULA, 
                          self.labirinto.fim[1] * TAMANHO_CELULA, 
                          TAMANHO_CELULA, TAMANHO_CELULA))
-
+        
     def desenhar_caminho_solucao(self):
-        """Renderiza o caminho da solução (se existir)"""
+        """Renderiza o caminho da solução (se existir) com transparência"""
         for x, y in self.caminho_solucao:
-            pygame.draw.circle(self.tela, VERMELHO,
-                             (int(x * TAMANHO_CELULA + TAMANHO_CELULA / 2), 
-                             int(y * TAMANHO_CELULA + TAMANHO_CELULA / 2)), 
-                             TAMANHO_CELULA // 4)
-
+            # Cria uma superfície temporária com transparência
+            transparent_surface = pygame.Surface((TAMANHO_CELULA - 4, TAMANHO_CELULA - 4), pygame.SRCALPHA)
+            # Desenha o retângulo na superfície temporária
+            pygame.draw.rect(transparent_surface, VERMELHO_TRANSPARENTE, (0, 0, TAMANHO_CELULA - 4, TAMANHO_CELULA -4))
+            # Posiciona a superfície na tela principal
+            self.tela.blit(transparent_surface, (x * TAMANHO_CELULA + 2, y * TAMANHO_CELULA + 2))
+            
     def desenhar_painel_lateral(self):
         """Renderiza o painel lateral com informações organizadas"""
         # Fundo do painel
@@ -193,14 +200,14 @@ class SimuladorLabirinto:
         ctrl3 = self.fonte.render("Espaço: Caminho", True, (100, 100, 100))
         self.tela.blit(ctrl3, (LARGURA + 30, 390))
 
-        # Botões (mantenha sua implementação existente)
         botao_caminho = self.criar_botao(420, "Mostrar Caminho", AZUL_CLARO if self.mostrar_caminho else AZUL)
         botao_novo = self.criar_botao(470, "Novo Labirinto", AZUL)
         botao_algoritmo = self.criar_botao(520, f"Algoritmo: {self.algoritmo}", AZUL)
         botao_salvar = self.criar_botao(570, "Salvar Labirinto", AZUL)
         botao_carregar = self.criar_botao(620, "Carregar Labirinto", AZUL)
+        botao_metodos_de_resolucao = self.criar_botao(670, f"Resolver: {self.algoritmo_solucao}", AZUL)
 
-        return botao_caminho, botao_novo, botao_algoritmo, botao_salvar, botao_carregar
+        return botao_caminho, botao_novo, botao_algoritmo, botao_salvar, botao_carregar, botao_metodos_de_resolucao
 
     def criar_botao(self, y, texto, cor):
         """Cria um botão retangular na posição vertical y com o texto especificado"""
@@ -208,6 +215,12 @@ class SimuladorLabirinto:
         texto_render = self.fonte.render(texto, True, BRANCO)
         self.tela.blit(texto_render, (LARGURA + 20, y + 10))
         return botao
+
+    def trocar_algoritmo_solucao(self):
+        opcoes = ['dfs', 'bfs', 'aestrela']
+        idx = opcoes.index(self.algoritmo_solucao)
+        self.algoritmo_solucao = opcoes[(idx + 1) % len(opcoes)]
+
 
     def desenhar_instrucoes(self):
         """Exibe as instruções de controle no painel lateral"""
@@ -262,8 +275,14 @@ class SimuladorLabirinto:
         pos = pygame.mouse.get_pos()
         if pos[0] > LARGURA:  # Verifica se clique foi no painel
             botoes = self.desenhar_painel_lateral()
-            botao_caminho, botao_novo, botao_algoritmo, botao_salvar, botao_carregar = botoes
+            botao_caminho, botao_novo, botao_algoritmo, botao_salvar, botao_carregar, botao_metodos_de_resolucao = botoes
 
+            
+            # if pos[0] > LARGURA and self.botoes_laterais:
+            #     if self.botoes_laterais['resolver'].collidepoint(pos):
+            #         self.robo.resolver_com_movimento(self.algoritmo_solucao)
+            #     elif self.botoes_laterais['modo'].collidepoint(pos):
+            #         self.trocar_algoritmo_solucao()
             if botao_caminho.collidepoint(pos):
                 self.mostrar_caminho = not self.mostrar_caminho  # Alterna caminho
             elif botao_novo.collidepoint(pos):
@@ -274,16 +293,26 @@ class SimuladorLabirinto:
                 self.salvar_labirinto()      # Salva labirinto atual
             elif botao_carregar.collidepoint(pos):
                 self.carregar_labirinto()    # Carrega labirinto salvo
+            elif botao_metodos_de_resolucao.collidepoint(pos):
+                self.trocar_algoritmo_solucao()
+                self.robo.resolver_com_movimento(self.algoritmo_solucao)  # Resolve o labirinto com o novo algoritmo
+            
                     
     def criar_novo_labirinto(self):
         """Gera um novo labirinto com o algoritmo atual"""
         self.labirinto = Labirinto(LINHAS, COLUNAS, self.algoritmo)
+        self.labirinto.simulador = self
         self.robo = Robo(self.labirinto.inicio, self.labirinto)  # Adicionei o segundo parâmetro
         self.caminho_solucao = self.labirinto.resolver()
 
     def alternar_algoritmo(self):
         """Alterna entre os algoritmos de geração de labirinto"""
-        self.algoritmo = 'kruskal' if self.algoritmo == 'prim' else 'prim'
+        if self.algoritmo == 'prim':
+            self.algoritmo = 'kruskal'
+        elif self.algoritmo == 'kruskal':
+            self.algoritmo = 'growingtree'
+        else:
+            self.algoritmo = 'prim'
         self.criar_novo_labirinto()
 
     def salvar_labirinto(self):
@@ -310,6 +339,7 @@ class SimuladorLabirinto:
                 self.labirinto = Labirinto.carregar_de_arquivo(f"Simulador - Pygame/data/{ultimo_arquivo}")
                 self.robo = Robo(self.labirinto.inicio, self.labirinto)  # Adicionei o segundo parâmetro
                 self.caminho_solucao = self.labirinto.resolver()
+                self.labirinto.simulador = self
                 print(f"Labirinto {ultimo_arquivo} carregado com sucesso!")
         except Exception as e:
             print(f"Erro ao carregar labirinto: {e}")

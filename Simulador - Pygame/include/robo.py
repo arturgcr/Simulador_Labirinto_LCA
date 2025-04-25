@@ -5,6 +5,7 @@ class Robo:
     def __init__(self, inicio, labirinto):
         self.posicao = list(inicio)
         self.labirinto = labirinto
+        self.labirinto.simulador = None  # default
         self.direcao = 0  # 0: cima, 1: direita, 2: baixo, 3: esquerda
         self.cor = (220, 120, 245)
         self.cor_seta = (0, 0, 0)
@@ -256,3 +257,61 @@ class Robo:
             },
             'direcao': self.direcao
         }
+    
+    def _rotacionar_para(self, nova_direcao):
+        """Gira o robô para a direção desejada"""
+        while self.direcao != nova_direcao:
+            self.girar_direita()
+
+    def _parede_a_frente(self):
+        self.detectar_paredes()
+        return self.deteccoes['frente']
+
+    def resolver_com_movimento(self, algoritmo='dfs'):
+        visitado = set()
+        caminho = []
+
+        if not hasattr(self.labirinto, 'simulador') or self.labirinto.simulador is None:
+            print("ERRO: self.labirinto.simulador está None")
+            return
+
+        def animar():
+            self.labirinto.simulador.desenhar_labirinto()
+            pygame.display.flip()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+            self.labirinto.simulador.relogio.tick(100)  # ajuste de velocidade
+
+        def dfs(x, y):
+            pos = (x, y)
+            if pos in visitado:
+                return False
+            visitado.add(pos)
+            caminho.append(pos)
+
+            if pos == self.labirinto.fim:
+                return True
+
+            for nova_direcao in range(4):
+                self._rotacionar_para(nova_direcao)
+                animar()
+
+                if not self._parede_a_frente():
+                    self.mover('F')
+                    animar()
+
+                    if dfs(*self.posicao):
+                        return True
+
+                    self.mover('B')  # backtrack
+                    animar()
+
+            caminho.pop()
+            return False
+
+        dfs(*self.posicao)
+        self.caminho_encontrado = caminho
+
+
