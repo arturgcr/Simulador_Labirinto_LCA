@@ -1,0 +1,21 @@
+epoch 1 | loss 0.0742 | val_acc 0.982
+epoch 2 | loss 0.0526 | val_acc 0.983
+epoch 3 | loss 0.0484 | val_acc 0.984
+epoch 4 | loss 0.0456 | val_acc 0.985
+epoch 5 | loss 0.0447 | val_acc 0.985
+epoch 6 | loss 0.0422 | val_acc 0.986
+epoch 7 | loss 0.0423 | val_acc 0.988
+epoch 8 | loss 0.0391 | val_acc 0.988
+epoch 9 | loss 0.0385 | val_acc 0.987
+epoch 10 | loss 0.0391 | val_acc 0.987
+epoch 11 | loss 0.0397 | val_acc 0.989
+epoch 12 | loss 0.0359 | val_acc 0.989
+epoch 13 | loss 0.0360 | val_acc 0.989
+epoch 14 | loss 0.0386 | val_acc 0.989
+epoch 15 | loss 0.0379 | val_acc 0.990
+epoch 16 | loss 0.0357 | val_acc 0.987
+epoch 17 | loss 0.0365 | val_acc 0.988
+epoch 18 | loss 0.0352 | val_acc 0.989
+epoch 19 | loss 0.0370 | val_acc 0.987
+epoch 20 | loss 0.0363 | val_acc 0.989
+saved -> models/residual.pt

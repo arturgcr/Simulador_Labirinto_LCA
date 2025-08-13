@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Pipeline (scripts.pipeline)",
+      "type": "python",
+      "request": "launch",
+      "module": "scripts.pipeline",
+      "cwd": "${workspaceFolder}/Simulador - Pygame",
+      "console": "integratedTerminal"
+    }
+  ]
+}

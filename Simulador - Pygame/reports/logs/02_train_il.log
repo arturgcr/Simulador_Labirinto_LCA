@@ -1,0 +1,11 @@
+epoch 01 | train_loss 0.7230 | val_acc 0.718 | n_train 45000 | n_val 5000
+epoch 02 | train_loss 0.5528 | val_acc 0.742 | n_train 45000 | n_val 5000
+epoch 03 | train_loss 0.5334 | val_acc 0.755 | n_train 45000 | n_val 5000
+epoch 04 | train_loss 0.5177 | val_acc 0.772 | n_train 45000 | n_val 5000
+epoch 05 | train_loss 0.5040 | val_acc 0.776 | n_train 45000 | n_val 5000
+epoch 06 | train_loss 0.4913 | val_acc 0.787 | n_train 45000 | n_val 5000
+epoch 07 | train_loss 0.4799 | val_acc 0.798 | n_train 45000 | n_val 5000
+epoch 08 | train_loss 0.4705 | val_acc 0.807 | n_train 45000 | n_val 5000
+epoch 09 | train_loss 0.4626 | val_acc 0.808 | n_train 45000 | n_val 5000
+epoch 10 | train_loss 0.4557 | val_acc 0.818 | n_train 45000 | n_val 5000
+saved -> models/il_mlp.pt
