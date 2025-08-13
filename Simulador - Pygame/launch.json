@@ -1,13 +1,3 @@
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Pipeline (scripts.pipeline)",
-      "type": "python",
-      "request": "launch",
-      "module": "scripts.pipeline",
-      "cwd": "${workspaceFolder}/Simulador - Pygame",
-      "console": "integratedTerminal"
-    }
-  ]
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:8e7daf4a444af34cac6cb67f0affa4e4dc07e932c2b8144df54ee4236f5b40e1
+size 301
